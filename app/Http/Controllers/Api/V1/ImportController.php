@@ -124,7 +124,7 @@ class ImportController extends Controller
                 'hgvs' => $row['hgvs'] ?? $row['name'] ?? 'unknown',
                 'old_classification' => $this->normalizeClassification($row['old_classification'] ?? $row['old'] ?? ''),
                 'new_classification' => $this->normalizeClassification($row['new_classification'] ?? $row['new'] ?? ''),
-                'reclassified_at' => $row['reclassified_at'] ?? $row['date'] ?? now(),
+                'reclassified_at' => $row['reclassified_at'] ?? $row['detected_at'] ?? $row['date'] ?? now(),
                 'submitter' => $row['submitter'] ?? null,
                 'condition' => $row['condition'] ?? null,
             ]);
@@ -168,8 +168,13 @@ class ImportController extends Controller
         return response()->json(['data' => ['message' => 'Stats recomputed successfully']]);
     }
 
-    private function normalizeClassification(string $raw): string
+    private function normalizeClassification(mixed $raw): string
     {
+        if (is_array($raw)) {
+            $raw = $raw[0] ?? '';
+        }
+        $raw = (string) $raw;
+
         $map = [
             'pathogenic' => 'pathogenic',
             'likely pathogenic' => 'likely_pathogenic',
