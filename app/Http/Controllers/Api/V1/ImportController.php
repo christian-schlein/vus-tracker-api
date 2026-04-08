@@ -35,14 +35,14 @@ class ImportController extends Controller
 
             try {
                 $geneSymbol = $row['gene'] ?? $row['gene_symbol'] ?? null;
-                if (!$geneSymbol) {
+                if (!$geneSymbol || strlen($geneSymbol) > 50) {
                     $errors++;
                     continue;
                 }
 
                 $gene = Gene::firstOrCreate(
                     ['symbol' => $geneSymbol],
-                    ['full_name' => $row['gene_name'] ?? null],
+                    ['full_name' => isset($row['gene_name']) ? mb_substr($row['gene_name'], 0, 255) : null],
                 );
 
                 // Handle condition
@@ -114,21 +114,25 @@ class ImportController extends Controller
             if (!$row) continue;
 
             $geneSymbol = $row['gene'] ?? $row['gene_symbol'] ?? null;
-            if (!$geneSymbol) continue;
+            if (!$geneSymbol || strlen($geneSymbol) > 50) continue;
 
-            $gene = Gene::firstOrCreate(['symbol' => $geneSymbol]);
+            try {
+                $gene = Gene::firstOrCreate(['symbol' => $geneSymbol]);
 
-            Reclassification::create([
-                'gene_id' => $gene->id,
-                'variation_id_clinvar' => $row['variation_id'] ?? null,
-                'hgvs' => $row['hgvs'] ?? $row['name'] ?? 'unknown',
-                'old_classification' => $this->normalizeClassification($row['old_classification'] ?? $row['old'] ?? ''),
-                'new_classification' => $this->normalizeClassification($row['new_classification'] ?? $row['new'] ?? ''),
-                'reclassified_at' => $row['reclassified_at'] ?? $row['detected_at'] ?? $row['date'] ?? now(),
-                'submitter' => $row['submitter'] ?? null,
-                'condition' => $row['condition'] ?? null,
-            ]);
-            $processed++;
+                Reclassification::create([
+                    'gene_id' => $gene->id,
+                    'variation_id_clinvar' => $row['variation_id'] ?? null,
+                    'hgvs' => mb_substr($row['hgvs'] ?? $row['name'] ?? 'unknown', 0, 500),
+                    'old_classification' => $this->normalizeClassification($row['old_classification'] ?? $row['old'] ?? ''),
+                    'new_classification' => $this->normalizeClassification($row['new_classification'] ?? $row['new'] ?? ''),
+                    'reclassified_at' => $row['reclassified_at'] ?? $row['detected_at'] ?? $row['date'] ?? now(),
+                    'submitter' => isset($row['submitter']) ? mb_substr($row['submitter'], 0, 500) : null,
+                    'condition' => isset($row['condition']) ? mb_substr($row['condition'], 0, 500) : null,
+                ]);
+                $processed++;
+            } catch (\Throwable $e) {
+                continue;
+            }
         }
 
         return response()->json(['data' => ['reclassifications_processed' => $processed]]);
