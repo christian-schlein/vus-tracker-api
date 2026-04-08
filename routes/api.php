@@ -9,8 +9,8 @@ use App\Http\Controllers\Api\V1\ImportController;
 use App\Http\Middleware\ApiKeyAuth;
 use Illuminate\Support\Facades\Route;
 
-// Public read endpoints
-Route::prefix('v1')->middleware('throttle:api-read')->group(function () {
+// Read endpoints — require read API key
+Route::prefix('v1')->middleware([ApiKeyAuth::class . ':read', 'throttle:api-read'])->group(function () {
     Route::get('stats', [StatsController::class, 'index']);
     Route::get('search', [SearchController::class, 'index']);
 
@@ -29,8 +29,8 @@ Route::prefix('v1')->middleware('throttle:api-read')->group(function () {
     Route::get('conditions/{condition}/genes', [ConditionController::class, 'genes']);
 });
 
-// Protected write endpoints
-Route::prefix('v1/import')->middleware([ApiKeyAuth::class, 'throttle:api-write'])->group(function () {
+// Write endpoints — require write API key (different, stronger key)
+Route::prefix('v1/import')->middleware([ApiKeyAuth::class . ':write', 'throttle:api-write'])->group(function () {
     Route::post('variants', [ImportController::class, 'variants']);
     Route::post('reclassifications', [ImportController::class, 'reclassifications']);
     Route::post('complete', [ImportController::class, 'complete']);
