@@ -23,5 +23,9 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('api-write', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());
         });
+
+        RateLimiter::for('watchlist-subscribe', function (Request $request) {
+            return Limit::perMinute(5)->by($request->ip());
+        });
     }
 }
