@@ -58,15 +58,15 @@ class StatsController extends Controller
         if ($request->filled("date_to")) $query->where("date_last_evaluated", "<=", $request->input("date_to"));
 
         $buckets = $query->select(
-            DB::raw("DATE(date_last_evaluated) as day"),
+            DB::raw("DATE_FORMAT(date_last_evaluated, "%Y-%m") as month"),
             DB::raw("SUM(classification IN (\"pathogenic\",\"likely_pathogenic\")) as path"),
             DB::raw("SUM(classification = \"uncertain_significance\") as vus"),
             DB::raw("SUM(classification IN (\"benign\",\"likely_benign\")) as ben"),
             DB::raw("COUNT(*) as total")
         )
-        ->groupBy("day")
-        ->orderBy("day")
-        ->limit(1000)
+        ->groupBy("month")
+        ->orderBy("month")
+        
         ->get();
 
         return response()->json(["data" => ["buckets" => $buckets]]);
